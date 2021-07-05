@@ -1,27 +1,112 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
-
 import octoprint.plugin
+import RPi.GPIO as GPIO
+import flask
 
-class LightcontrolsPlugin(octoprint.plugin.SettingsPlugin,
-    octoprint.plugin.AssetPlugin,
-    octoprint.plugin.TemplatePlugin
-):
+class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
+                            octoprint.plugin.AssetPlugin,
+                            octoprint.plugin.TemplatePlugin,
+                            octoprint.plugin.SimpleApiPlugin,
+                            octoprint.plugin.StartupPlugin,
+                            octoprint.plugin.ShutdownPlugin ):
+
+    # ToDo:
+    # - Add invert setting
+    def __init__(self):
+        self.Lights = {}
+
+    def gpio_startup(self, pin, frequency = 200):
+        self._logger.info("LightControls gpio_startup, pin: {}, freq: {}".format(pin, frequency))
+        if pin > 0:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(pin, GPIO.OUT)
+            self.Lights[pin] = GPIO.PWM(pin, frequency)
+            self.Lights[pin].start(0) # Start at 0% duty cycle
+        else:
+            self._logger.warning("Configured pin not an integer")
+
+    def gpio_cleanup(self, pin):
+        self._logger.info("LightControls gpio_cleanup, pin: {}".format(pin))
+        if pin > 0:
+            self.Lights[pin].stop()
+            del self.Lights[pin]
+
+    def gpio_set_value(self, pin, value):
+        self._logger.info("LightControls pin({}).setValue({})".format(pin, value))
+        if pin > 0:
+            self.Lights[pin].ChangeDutyCycle(value)
+
+    ##~~ SimpleApiPlugin mixin
+    def get_api_commands(self):
+        return dict(
+            setLightValue=["pin", "percentage"],
+        )
+
+    def on_api_command(self, command, data):
+        if command == "setLightValue":
+            try:
+                pin = data["pin"]
+                value = data["percentage"]
+                self.gpio_set_value(pin, value)
+            except:
+                self._logger.error("Failure in setLightValue")
+        # elif command == "sendGoogleAssistantBroadcast":
+        #     try:
+        #         message=data["message"]
+        #         self.assistant_relay_broadcast(message)
+        #     except:
+        #         self._logger.error("Failure onsendGoogleAssistantBroadcast")
+
+
+    def on_api_get(self, request):
+        return flask.jsonify(foo="bar2")
+
+    def is_api_adminonly(self):
+        return True
 
     ##~~ SettingsPlugin mixin
 
     def get_settings_defaults(self):
-        return {
-            # put your plugin's default settings here
-        }
+        return dict (
+            light_controls=[{
+                'name': '',
+                'pin': '',
+                'ispwm': 'true',
+                'frequency': '250',
+                'inverted': 'false'
+            }]
+        )
+
+    def on_settings_initialized(self):
+        self._logger.info("LightControls settings initialized: '{}'".format(self._settings.get(["light_controls"])))
+
+    def on_settings_save(self, data):
+        # Get old settings:
+
+        # Get updated settings
+        octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+
+        # Handle changes (if new != old)
+        self._logger.info("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
+
+
+    ##~~ StartupPlugin mixin
+
+    def on_after_startup(self):
+        self._Lights = self._settings.get(["light_controls"])
+        self._logger.info("LightControls startup: {}".format(self._Lights))
+        # start gpio
+
+
+    ##~~ ShutdownPlugin mixin
+
+    def on_shutdown(self):
+        for pin in self.Lights:
+            self.gpio_cleanup(pin)
+
+        self._logger.info("LightControls shutdown")
 
     ##~~ AssetPlugin mixin
 
@@ -31,9 +116,15 @@ class LightcontrolsPlugin(octoprint.plugin.SettingsPlugin,
         return {
             "js": ["js/LightControls.js"],
             "css": ["css/LightControls.css"],
-            "less": ["less/LightControls.less"]
         }
 
+    ##~~ TemplatePlugin mixin
+
+    def get_template_configs(self):
+        return [ 
+            dict(type="settings", template="lightcontrols_settings.jinja2", custom_bindings=True),
+            dict(type="generic", template="lightcontrols.jinja2", custom_bindings=True)
+        ]
     ##~~ Softwareupdate hook
 
     def get_update_information(self):
@@ -57,17 +148,8 @@ class LightcontrolsPlugin(octoprint.plugin.SettingsPlugin,
         }
 
 
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "Lightcontrols Plugin"
-
-# Starting with OctoPrint 1.4.0 OctoPrint will also support to run under Python 3 in addition to the deprecated
-# Python 2. New plugins should make sure to run under both versions for now. Uncomment one of the following
-# compatibility flags according to what Python versions your plugin supports!
-#__plugin_pythoncompat__ = ">=2.7,<3" # only python 2
-#__plugin_pythoncompat__ = ">=3,<4" # only python 3
-#__plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
+__plugin_name__ = "LightControls"
+__plugin_pythoncompat__ = ">=3,<4" # only python 3
 
 def __plugin_load__():
     global __plugin_implementation__

@@ -1,0 +1,10 @@
+<!-- ko allowBindings: true -->
+<div class="jog-panel" id="lightcontrols">
+    <h1>Lights</h1>
+    <div data-bind="foreach: lights">
+      <div class="slidecontainer control-box">
+        <input type="range" min="0" max="100" value="0" class="slider" data-bind="value: light_val, valueUpdate: 'input', text: name">
+      </div>
+    </div>
+</div>
+<!-- /ko -->

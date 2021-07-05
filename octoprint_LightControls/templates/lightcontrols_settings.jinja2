@@ -1,0 +1,39 @@
+<!-- ko allowBindings: true -->
+<form id="settings_plugin_lightcontrols_form" class="form-horizontal">
+    <h3>{{ _('Light Controls') }}</h3>
+    <div class="row-fluid">
+        <div class="span3 text-center"><h4>{{ _('Name') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('Pin') }}</h4></div>
+        <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>        
+        <div class="span2 text-center"><h4>{{ _('Frequency') }}</h4></div>
+        <div class="span1 text-center"><h4>{{ _('Inverted') }}</h4></div>
+    </div>
+    <div data-bind="foreach: settings.settings.plugins.LightControls.light_controls">
+        <div class="row-fluid" style="margin-bottom: 5px">
+            <div class="span3">
+                <input type="text" class="span12 text-right" data-bind="value: name">
+            </div>
+            <div class="span2">
+                <select style="width: 100%" data-bind="options: $parent.gpio_pin_options, value: pin"></select>
+            </div>
+            <div class="span1">
+                <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: ispwm">
+            </div>
+            <div class="span2">
+                <input type="text" class="span12 text-right" data-bind="value: frequency">
+            </div>
+            <div class="span1">
+                <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: inverted">
+            </div>
+            <div class="span1">
+                <button title="Remove Light" class="btn btn-danger" data-bind="click: $parent.removeLightControl"><i class="fa fa-trash-o"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="offset9 span2">
+            <button title="Add Light" class="btn btn-primary" data-bind="click: addLightControl"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
+</form>
+<!-- /ko -->
