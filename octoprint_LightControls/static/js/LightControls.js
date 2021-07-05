@@ -17,15 +17,52 @@ $(function() {
         self.light_controls = ko.observableArray(); // Raw settings
         self.lights = ko.observableArray(); // light states
 
-        self.updateLightsStructure = function() {
-            ko.utils.arrayForEach(self.settings.settings.plugins.LightControls.light_controls(), function (item, index) {
-                var entry = { name: item.name, 
-                              pin: item.pin,
-                              light_val: ko.observable(0) };
-                entry.light_val.subscribe(function(value) {
-                    console.log("UpdateSliderValue(%d)", value);
+        ko.subscribable.fn.withUpdater = function (handler, target, identifier) {
+            var self = this;   
+        
+            var _oldValue;
+            this.subscribe(function (oldValue) {
+                _oldValue = oldValue;
+            }, null, 'beforeChange');
+
+            this.subscribe(function (newValue) {
+                handler.call(target, _oldValue, newValue, identifier);
+            });
+            this.extend({ rateLimit: 100 });
+        
+            return this;     
+        };
+
+        var sliderUpdate = function (oldvalue, newvalue, identifier) {
+            console.log('identifier is '+ identifier + ' old val: ' + oldvalue + ', new val: ' +  newvalue);
+
+            if( oldvalue != newvalue) {            
+                // communicate update to backend
+                $.ajax({
+                    url: API_BASEURL + "plugin/"+PLUGIN_ID,
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify({
+                        command: "setLightValue",
+                        pin: identifier,
+                        percentage: newvalue
+                    }),
+                    contentType: "application/json; charset=UTF-8"
+                }).done(function(data){
+
+                }).always(function(){
+
                 });
-                self.lights.push(entry);
+            }
+        }
+
+        self.updateLightsStructure = function() {
+            self.lights([]);
+            ko.utils.arrayForEach(self.settings.settings.plugins.LightControls.light_controls(), function (item, index) {
+                self.lights.push({ 
+                    name: item.name, 
+                    pin: item.pin,
+                    light_val: ko.observable(0).withUpdater(sliderUpdate, self, item.pin()) });
             });
         };
 
@@ -43,7 +80,6 @@ $(function() {
         };
 
         self.onSettingsBeforeSave = function() {
-            // Update multicam profile for default webcam
             // ko.utils.arrayForEach(self.settings.settings.plugins.LightControls.light_controls(), function (item, index) {
             // });
         };
@@ -55,7 +91,6 @@ $(function() {
         };
 
         self.addLightControl = function() {
-            console.log("Adding new light!");
             self.settings.settings.plugins.LightControls.light_controls.push({
                 name: ko.observable('Light '+self.light_controls().length), 
                 pin: ko.observable(''),
@@ -69,12 +104,6 @@ $(function() {
             self.settings.settings.plugins.LightControls.light_controls.remove(profile);
             self.light_controls(self.settings.settings.plugins.LightControls.light_controls());
         };
-
-        self.sliderEvent = function(control, event) {
-            console.log("Slider event for: ");
-            console.log(control);
-        };
-
     }
 
 
