@@ -1,7 +1,9 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import copy
 import octoprint.plugin
+from octoprint.events import eventManager, Events
 import sys, traceback
 import RPi.GPIO as GPIO
 import flask
@@ -9,36 +11,48 @@ import flask
 class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
                             octoprint.plugin.TemplatePlugin,
+                            octoprint.plugin.EventHandlerPlugin,
                             octoprint.plugin.SimpleApiPlugin,
                             octoprint.plugin.StartupPlugin,
                             octoprint.plugin.ShutdownPlugin ):
-
     # ToDo:
-    # - Add invert setting
+    # - Control UI name / slider / value allignment
+    # - Automatic on / off value on printer state
+    #   - Printer online / offline
+    #   - Startup / shutdown
+    #   - Print start / stop
+    defaultEntry = {'name': '',
+                    'pin': '',
+                    'ispwm': True,
+                    'frequency': 250,
+                    'inverted': False,
+                    'onConnectValue': '',
+                    'onDisconnectValue': '',
+                    'onPrintStartValue': '',
+                    'onPrintEndValue': '' }
+
     def __init__(self):
         self.Lights = {}
 
-    def gpio_startup(self, pin, frequency = 200, invert = False):
-        self._logger.info("LightControls gpio_startup, pin: {}, freq: {}, invert: {}".format(pin, frequency, invert))
+    def gpio_startup(self, pin, settings):
+        self._logger.info("LightControls gpio_startup, pin: {}, settings: {}".format(pin, settings))
         if pin > 0:
+            # Remove to re-add if already present:
             if pin in self.Lights:
-                self._logger.warning("Not creating PWM for pin {}. Already exists!".format(pin))
-            else:
-                GPIO.setmode(GPIO.BCM)
-                GPIO.setup(pin, GPIO.OUT)
-                try:
-                    self.Lights[pin] = {
-                        'pwm': GPIO.PWM(pin, frequency),
-                        'pin': pin,
-                        'invert': bool(invert) }
-                    # self.Lights[pin].pwm = GPIO.PWM(pin, frequency)
-                    # self.Lights[pin].pin = pin
-                    # self.Lights[pin].invert = bool(invert)
-                    self.Lights[pin]["pwm"].start(100 if self.Lights[pin]["invert"] else 0)
-                except:
-                    exc_type, exc_value, exc_tb = sys.exc_info()
-                    self._logger.error("exception in setLightValue(): {}".format(exc_type))
-                    self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
+                self.gpio_cleanup(pin)
+                
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(pin, GPIO.OUT)
+            try:
+                self.Lights[pin] = settings
+                self.Lights[pin]['pwm'] = GPIO.PWM(pin, int(settings["frequency"]))
+                self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
+                self.Lights[pin]['value'] = 0
+            except:
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                self._logger.error("exception in gpio_startup(): {}".format(exc_type))
+                self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
                     
         else:
             self._logger.warning("Configured pin not an integer")
@@ -51,11 +65,15 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
     def gpio_set_value(self, pin, value):
         if pin in self.Lights:
-            val = ((int(100) - int(value)) if self.Lights[pin]["invert"] else int(value))
-            self._logger.info("LightControls pin({}).setValue({}), invert: {}".format(pin, value, self.Lights[pin]["invert"]))
+            val = ((int(100) - int(value)) if self.Lights[pin]["inverted"] else int(value))
+            self._logger.info("LightControls pin({}).setValue({}), inverted: {}".format(pin, value, self.Lights[pin]["inverted"]))
             self.Lights[pin]["pwm"].ChangeDutyCycle(val)
+            if value != self.Lights[pin]["value"]:
+                self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=value))
+            self.Lights[pin]["value"] = value
 
     ##~~ SimpleApiPlugin mixin
+
     def get_api_commands(self):
         return dict(
             setLightValue=["pin", "percentage"],
@@ -71,13 +89,6 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 self._logger.error("exception in setLightValue(): {}".format(exc_type))
                 self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
-        # elif command == "sendGoogleAssistantBroadcast":
-        #     try:
-        #         message=data["message"]
-        #         self.assistant_relay_broadcast(message)
-        #     except:
-        #         self._logger.error("Failure onsendGoogleAssistantBroadcast")
-
 
     def on_api_get(self, request):
         return flask.jsonify(foo="bar2")
@@ -85,23 +96,75 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def is_api_adminonly(self):
         return True
 
+
+    ##~~ EventHandlerPlugin mixin
+
+    def on_event(self, event, payload):
+        # Client connected, send current ui setting:
+        if event == Events.CONNECTED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onConnectValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onConnectValue'])
+        elif event == Events.DISCONNECTED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onDisconnectValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onDisconnectValue'])
+        elif event == Events.PRINT_STARTED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onPrintStartValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onPrintStartValue'])
+        elif event == Events.PRINT_DONE or event == Events.PRINT_FAILED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onPrintEndValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onPrintEndValue'])
+
     ##~~ SettingsPlugin mixin
 
     def get_settings_defaults(self):
         return dict (
             light_controls=[{
                 'name': '',
-                'pin': '',
-                'ispwm': 'true',
+                'pin': None,
+                'ispwm': True,
                 'frequency': 250,
-                'inverted': 'false'
+                'inverted': False,
+                'onConnectValue': '',
+                'onDisconnectValue': '',
+                'onPrintStartValue': '',
+                'onPrintEndValue': ''
             }]
         )
 
+    def checkLightControlEntryKeys(self, entry):
+        return set(self.defaultEntry.keys()) == set(entry.keys())
+
+    def updateLightControlEntry(self, entry):
+        _entry = copy.deepcopy(self.defaultEntry)
+        for key in entry:
+            _entry[key]=entry[key]
+        self._logger.info("Updated LightControlEntry from: {}, to {}".format(entry, _entry))
+        return _entry
+
     def on_settings_initialized(self):
-        self._logger.info("LightControls settings initialized: '{}'".format(self._settings.get(["light_controls"])))
-        for controls in self._settings.get(["light_controls"]):
-            self.gpio_startup(controls["pin"], controls["frequency"], bool(controls["inverted"]))
+        lightControls = self._settings.get(["light_controls"])
+        self._logger.info("LightControls settings initialized: '{}'".format(lightControls))
+        # On initialization check for incomplete settings!
+        modified=False
+        for idx, ctrl in enumerate(lightControls):
+            if not self.checkLightControlEntryKeys(ctrl):
+                lightControls[idx] = self.updateLightControlEntry(ctrl)
+                modified=True
+                self._logger.info("Fixing Loop {}: '{}'".format(idx, lightControls))
+            self.gpio_startup(lightControls[idx]["pin"], lightControls[idx])
+
+        if modified:
+            self._settings.set(["light_controls"], lightControls)
+
+        self._logger.info("LightControls settings post initialization: '{}'".format(lightControls))
 
     def on_settings_save(self, data):
         # Get old settings:
@@ -111,6 +174,9 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
         # Handle changes (if new != old)
         self._logger.info("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
+        for controls in self._settings.get(["light_controls"]):
+            self._logger.info("Initializing GPIO for: {}".format(controls))
+            self.gpio_startup(controls["pin"], controls)
 
 
     ##~~ StartupPlugin mixin
@@ -121,7 +187,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         # start gpio
         for controls in self._settings.get(["light_controls"]):
             self._logger.info("Initializing GPIO for: {}".format(controls))
-            self.gpio_startup(controls["pin"], controls["frequency"], bool(controls["inverted"]))
+            self.gpio_startup(controls["pin"], controls)
 
 #   def on_after_startup(self):
 #       helpers = self._plugin_manager.get_helpers("mqtt", "mqtt_publish", "mqtt_subscribe", "mqtt_unsubscribe")
@@ -152,6 +218,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
         self._logger.info("LightControls shutdown")
 
+
     ##~~ AssetPlugin mixin
 
     def get_assets(self):
@@ -162,6 +229,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             "css": ["css/LightControls.css"],
         }
 
+
     ##~~ TemplatePlugin mixin
 
     def get_template_configs(self):
@@ -169,6 +237,8 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             dict(type="settings", template="lightcontrols_settings.jinja2", custom_bindings=True),
             dict(type="generic", template="lightcontrols.jinja2", custom_bindings=True)
         ]
+
+
     ##~~ Softwareupdate hook
 
     def get_update_information(self):

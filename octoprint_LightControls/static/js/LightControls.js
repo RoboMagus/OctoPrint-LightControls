@@ -96,7 +96,11 @@ $(function() {
                 pin: ko.observable(''),
                 ispwm: ko.observable('true'),
                 frequency: ko.observable('250'),
-                inverted: ko.observable('false') });
+                inverted: ko.observable('false'), 
+                onConnectValue: ko.observable(''),
+                onDisconnectValue: ko.observable(''),
+                onPrintStartValue: ko.observable(''),
+                onPrintEndValue: ko.observable('') });
             self.light_controls(self.settings.settings.plugins.LightControls.light_controls());
         };
 
@@ -104,6 +108,24 @@ $(function() {
             self.settings.settings.plugins.LightControls.light_controls.remove(profile);
             self.light_controls(self.settings.settings.plugins.LightControls.light_controls());
         };
+
+        self.onDataUpdaterPluginMessage = function(plugin, data) {
+            if (plugin == PLUGIN_ID) {
+                console.log("Received message:");
+                console.log(data);
+                if (data.verbosity != undefined) {
+                    // Set prevVerbosity to avoid communication to backend...
+                    self._prevVerbosity = data.verbosity;
+                    if (data.verbosity == 0) {
+                        $("#googleassistantsidebar_icon").attr("class", "fas fa-comment-slash");
+                    }
+                    else {
+                        // do nothing
+                    }
+                    self._verbosityLevel(data.verbosity);
+                }
+            }
+        }
     }
 
 

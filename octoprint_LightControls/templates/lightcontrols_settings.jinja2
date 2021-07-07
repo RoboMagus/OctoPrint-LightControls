@@ -20,7 +20,7 @@
                 <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: ispwm">
             </div>
             <div class="span2">
-                <input type="text" class="span12 text-right" data-bind="value: frequency">
+                <input type="number" min="50" max="5000" class="span12 text-right" data-bind="value: frequency">
             </div>
             <div class="span1">
                 <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: inverted">
@@ -33,6 +33,46 @@
     <div class="row-fluid">
         <div class="offset9 span2">
             <button title="Add Light" class="btn btn-primary" data-bind="click: addLightControl"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
+    
+    <h4>{{ _('Set light value on printer connect / disconnect') }}</h4>
+    <div class="row-fluid">
+        <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Connect Value') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Disconnect Value') }}</h4></div>   
+    </div>
+    <div data-bind="foreach: settings.settings.plugins.LightControls.light_controls">
+        <div class="row-fluid" style="margin-bottom: 5px">
+            <div class="span3" style="text-align:right; line-height: 32px;">
+                <span data-bind="text: name"></span>
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onConnectValue">
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onDisconnectValue">
+            </div>
+        </div>
+    </div>
+
+    <h4>{{ _('Set light value on print start / end') }}</h4>
+    <div class="row-fluid">
+        <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Start Value') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on End Value') }}</h4></div>   
+    </div>
+    <div data-bind="foreach: settings.settings.plugins.LightControls.light_controls">
+        <div class="row-fluid" style="margin-bottom: 5px">
+            <div class="span3" style="text-align:right; line-height: 32px;">
+                <span data-bind="text: name"></span>
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintStartValue">
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintEndValue">
+            </div>
         </div>
     </div>
 </form>
