@@ -4,7 +4,7 @@
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Name') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Pin') }}</h4></div>
-        <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>        
+        <!-- <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>         -->
         <div class="span2 text-center"><h4>{{ _('Frequency') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Inverted') }}</h4></div>
     </div>
@@ -16,9 +16,9 @@
             <div class="span1">
                 <select style="width: 100%" data-bind="options: $parent.gpio_pin_options, value: pin"></select>
             </div>
-            <div class="span1">
+            <!-- <div class="span1">
                 <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: ispwm">
-            </div>
+            </div> -->
             <div class="span2">
                 <input type="number" min="50" max="5000" class="span12 text-right" data-bind="value: frequency">
             </div>
@@ -66,6 +66,8 @@
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Start Value') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Pause Value') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Resume Value') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on End Value') }}</h4></div>   
     </div>
     <div data-bind="foreach: settings.settings.plugins.LightControls.light_controls">
@@ -75,6 +77,12 @@
             </div>
             <div class="span2">
                 <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintStartValue">
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintPausedValue">
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintResumedValue">
             </div>
             <div class="span2">
                 <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onPrintEndValue">

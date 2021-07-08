@@ -99,6 +99,8 @@ $(function() {
                 onConnectValue: ko.observable(''),
                 onDisconnectValue: ko.observable(''),
                 onPrintStartValue: ko.observable(''),
+                onPrintPausedValue: ko.observable(''),
+                onPrintResumedValue: ko.observable(''),
                 onPrintEndValue: ko.observable('') });
             self.light_controls(self.settings.settings.plugins.LightControls.light_controls());
         };

@@ -30,6 +30,8 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     'onConnectValue': '',
                     'onDisconnectValue': '',
                     'onPrintStartValue': '',
+                    'onPrintPausedValue': '',
+                    'onPrintResumedValue': '',
                     'onPrintEndValue': '' }
 
     def __init__(self):
@@ -118,7 +120,17 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 self._logger.info(self.Lights[pin])
                 if self.Lights[pin]['onPrintStartValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintStartValue'])
-        elif event == Events.PRINT_DONE or event == Events.PRINT_FAILED:
+        elif event == Events.PRINT_PAUSED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onPrintPausedValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onPrintPausedValue'])
+        elif event == Events.PRINT_RESUMED:
+            for pin in self.Lights:
+                self._logger.info(self.Lights[pin])
+                if self.Lights[pin]['onPrintResumedValue']:
+                    self.gpio_set_value(pin, self.Lights[pin]['onPrintResumedValue'])
+        elif event == Events.PRINT_DONE or event == Events.PRINT_CANCELLED or event == Events.PRINT_FAILED:
             for pin in self.Lights:
                 self._logger.info(self.Lights[pin])
                 if self.Lights[pin]['onPrintEndValue']:
@@ -138,6 +150,8 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 'onConnectValue': '',
                 'onDisconnectValue': '',
                 'onPrintStartValue': '',
+                'onPrintPausedValue': '',
+                'onPrintResumedValue': '',
                 'onPrintEndValue': ''
             }]
         )
