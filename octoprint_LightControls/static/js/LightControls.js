@@ -34,8 +34,6 @@ $(function() {
         };
 
         var sliderUpdate = function (oldvalue, newvalue, identifier) {
-            console.log('identifier is '+ identifier + ' old val: ' + oldvalue + ', new val: ' +  newvalue);
-
             if( oldvalue != newvalue) {            
                 // communicate update to backend
                 $.ajax({
@@ -112,18 +110,12 @@ $(function() {
 
         self.onDataUpdaterPluginMessage = function(plugin, data) {
             if (plugin == PLUGIN_ID) {
-                console.log("Received message:");
-                console.log(data);
-                if (data.verbosity != undefined) {
-                    // Set prevVerbosity to avoid communication to backend...
-                    self._prevVerbosity = data.verbosity;
-                    if (data.verbosity == 0) {
-                        $("#googleassistantsidebar_icon").attr("class", "fas fa-comment-slash");
-                    }
-                    else {
-                        // do nothing
-                    }
-                    self._verbosityLevel(data.verbosity);
+                if (data.pin != undefined && data.value != undefined) {                    
+                    ko.utils.arrayForEach(self.lights(), function(item) {
+                        if(item.pin() == data.pin) {
+                            item.light_val(data.value);
+                        }
+                    });
                 }
             }
         }

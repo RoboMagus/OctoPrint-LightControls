@@ -66,12 +66,13 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
     def gpio_set_value(self, pin, value):
         if pin in self.Lights:
-            val = ((int(100) - int(value)) if self.Lights[pin]["inverted"] else int(value))
-            self._logger.info("LightControls pin({}).setValue({}), inverted: {}".format(pin, value, self.Lights[pin]["inverted"]))
+            iVal = int(value)
+            val = ((100 - iVal) if self.Lights[pin]["inverted"] else iVal)
+            self._logger.info("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
             self.Lights[pin]["pwm"].ChangeDutyCycle(val)
-            if value != self.Lights[pin]["value"]:
-                self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=value))
-            self.Lights[pin]["value"] = value
+            if iVal != self.Lights[pin]["value"]:
+                self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
+            self.Lights[pin]["value"] = iVal
 
     ##~~ SimpleApiPlugin mixin
 
