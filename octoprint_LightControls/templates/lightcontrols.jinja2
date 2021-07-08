@@ -1,11 +1,34 @@
 <!-- ko allowBindings: true -->
 <div class="jog-panel" id="lightcontrols">
     <h1>Lights</h1>
-    <div data-bind="foreach: lights">
-      <div class="slidecontainer control-box">
-        <span data-bind="text: name"></span>
-        <input type="range" min="0" max="100" value="0" class="slider" data-bind="value: light_val, valueUpdate: 'input'">
-      </div>
-    </div>
+      <table style="margin-top: -4px;">
+      <tbody data-bind="foreach: lights" style="padding: 0px;">
+          <tr  style="padding: 0px;">
+              <td  style="padding: 0px;"><div class="span2 control-box" style="margin-bottom: 0px; margin-left: 2px;">
+                  <span data-bind="text: name"></span>
+                  <input type="range" min="0" max="100" value="0" style="padding: 0; width: 98%; margin-top: -8px;" class="slider" data-bind="value: light_val, valueUpdate: 'input'">
+              </div></td>
+              <td  style="padding: 0px;"><div class="input-append control-box" style="margin-bottom: 0px; padding-left: 8px;">
+                  <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="value: light_val">
+                  <span class="add-on">%</span>
+              </div></td>
+          </tr>
+      </tbody>
+    </table>
 </div>
 <!-- /ko -->
+
+
+<!-- 
+
+
+              <td><div class="span3 control-box" style="text-align:right; line-height: 32px;">
+                  <span data-bind="text: name"></span>
+              </div></td>
+              <td><input type="range" min="0" max="100" value="0" style="padding: 0;" class="slider" data-bind="value: light_val, valueUpdate: 'input'"></td>
+              <td><div class="input-append control-box">
+                  <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="value: light_val">
+                  <span class="add-on">%</span>
+              </div></td>
+
+-->

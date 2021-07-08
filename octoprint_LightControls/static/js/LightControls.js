@@ -97,6 +97,7 @@ $(function() {
                 ispwm: ko.observable('true'),
                 frequency: ko.observable('250'),
                 inverted: ko.observable('false'), 
+                onOctoprintStartValue: ko.observable(''),
                 onConnectValue: ko.observable(''),
                 onDisconnectValue: ko.observable(''),
                 onPrintStartValue: ko.observable(''),

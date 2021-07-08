@@ -26,12 +26,15 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     'ispwm': True,
                     'frequency': 250,
                     'inverted': False,
+                    'onOctoprintStartValue': '',
                     'onConnectValue': '',
                     'onDisconnectValue': '',
                     'onPrintStartValue': '',
                     'onPrintEndValue': '' }
 
     def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
         self.Lights = {}
 
     def gpio_startup(self, pin, settings):
@@ -41,11 +44,9 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             if pin in self.Lights:
                 self.gpio_cleanup(pin)
                 
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
             GPIO.setup(pin, GPIO.OUT)
             try:
-                self.Lights[pin] = settings
+                self.Lights[pin] = copy.deepcopy(settings)
                 self.Lights[pin]['pwm'] = GPIO.PWM(pin, int(settings["frequency"]))
                 self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
                 self.Lights[pin]['value'] = 0
@@ -132,6 +133,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 'ispwm': True,
                 'frequency': 250,
                 'inverted': False,
+                'onOctoprintStartValue': '',
                 'onConnectValue': '',
                 'onDisconnectValue': '',
                 'onPrintStartValue': '',
@@ -188,6 +190,11 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         for controls in self._settings.get(["light_controls"]):
             self._logger.info("Initializing GPIO for: {}".format(controls))
             self.gpio_startup(controls["pin"], controls)
+        # Set all default Octoprint Startup values if available:
+        for pin in self.Lights:
+            self._logger.info(self.Lights[pin])
+            if self.Lights[pin]['onOctoprintStartValue']:
+                self.gpio_set_value(pin, self.Lights[pin]['onOctoprintStartValue'])
 
 #   def on_after_startup(self):
 #       helpers = self._plugin_manager.get_helpers("mqtt", "mqtt_publish", "mqtt_subscribe", "mqtt_unsubscribe")

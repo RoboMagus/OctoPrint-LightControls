@@ -1,9 +1,9 @@
 <!-- ko allowBindings: true -->
 <form id="settings_plugin_lightcontrols_form" class="form-horizontal">
-    <h3>{{ _('Light Controls') }}</h3>
+    <h2>{{ _('Light Controls') }}</h3>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Name') }}</h4></div>
-        <div class="span2 text-center"><h4>{{ _('Pin') }}</h4></div>
+        <div class="span1 text-center"><h4>{{ _('Pin') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>        
         <div class="span2 text-center"><h4>{{ _('Frequency') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Inverted') }}</h4></div>
@@ -13,7 +13,7 @@
             <div class="span3">
                 <input type="text" class="span12 text-right" data-bind="value: name">
             </div>
-            <div class="span2">
+            <div class="span1">
                 <select style="width: 100%" data-bind="options: $parent.gpio_pin_options, value: pin"></select>
             </div>
             <div class="span1">
@@ -36,9 +36,11 @@
         </div>
     </div>
     
-    <h4>{{ _('Set light value on printer connect / disconnect') }}</h4>
+    <h3>{{ _('Set light value on Octoprint Startup / Printer Connect / Printer Disconnect') }}</h4>
+    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs.</span>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
+        <div class="span2 text-center"><h4>{{ _('on Octoprint Startup Value') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Connect Value') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Disconnect Value') }}</h4></div>   
     </div>
@@ -46,6 +48,9 @@
         <div class="row-fluid" style="margin-bottom: 5px">
             <div class="span3" style="text-align:right; line-height: 32px;">
                 <span data-bind="text: name"></span>
+            </div>
+            <div class="span2">
+                <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onOctoprintStartValue">
             </div>
             <div class="span2">
                 <input type="number" min="0" max="100" class="span12 text-right" data-bind="value: onConnectValue">
@@ -56,7 +61,8 @@
         </div>
     </div>
 
-    <h4>{{ _('Set light value on print start / end') }}</h4>
+    <h3>{{ _('Set light value on Print Events') }}</h4>
+    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs.</span>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Start Value') }}</h4></div>
