@@ -55,14 +55,7 @@ $(function() {
         }
 
         self.requestDistributeLightValues = function() {
-            console.log("Requesting light levels!");
-            
-            //  $.get(API_BASEURL + "plugin/"+PLUGIN_ID+"/getLightLevels", JSON.stringify({"MyRequest": "GetData"})).done(function (data) {
-            //      console.log("requestLightValues::done");
-            //      console.log(data);
-            //  });
-
-            
+            // console.log("Requesting light levels!");
             $.ajax({
                 url: API_BASEURL + "plugin/"+PLUGIN_ID,
                 type: "POST",
@@ -141,8 +134,6 @@ $(function() {
         self.onDataUpdaterPluginMessage = function(plugin, data) {
             if (plugin == PLUGIN_ID) {
                 if (data.pin != undefined && data.value != undefined) {        
-                    console.log("GotLightLevels!");
-                    console.log(data);
                     ko.utils.arrayForEach(self.lights(), function(item) {
                         if(item.pin() == data.pin) {
                             item.light_val(data.value);

@@ -40,7 +40,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         self.Lights = {}
 
     def gpio_startup(self, pin, settings):
-        self._logger.info("LightControls gpio_startup, pin: {}, settings: {}".format(pin, settings))
+        self._logger.debug("LightControls gpio_startup, pin: {}, settings: {}".format(pin, settings))
         if pin > 0:
             # Remove to re-add if already present:
             if pin in self.Lights:
@@ -61,7 +61,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             self._logger.warning("Configured pin not an integer")
 
     def gpio_cleanup(self, pin):
-        self._logger.info("LightControls gpio_cleanup, pin: {}".format(pin))
+        self._logger.debug("LightControls gpio_cleanup, pin: {}".format(pin))
         if pin in self.Lights:
             self.Lights[pin]["pwm"].stop()
             del self.Lights[pin]
@@ -70,14 +70,14 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         if pin in self.Lights:
             iVal = int(value)
             val = ((100 - iVal) if self.Lights[pin]["inverted"] else iVal)
-            self._logger.info("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
+            self._logger.debug("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
             self.Lights[pin]["pwm"].ChangeDutyCycle(val)
             if iVal != self.Lights[pin]["value"]:
                 self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
             self.Lights[pin]["value"] = iVal
 
     def send_light_values(self):
-        self._logger.info("SendingLightValues")
+        self._logger.debug("SendingLightValues")
         for pin in self.Lights:
             self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=self.Lights[pin]["value"]))
 
@@ -104,7 +104,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             self.send_light_values()
 
     def on_api_get(self, request):
-        self._logger.info("on_api_get({}).Json: ".format(request, request.get_json()))
+        self._logger.debug("on_api_get({}).Json: ".format(request, request.get_json()))
         if request == "getLightValues":
             response = dict()
             for pin in self.Lights:
@@ -121,32 +121,32 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         # Client connected, send current ui setting:
         if event == Events.CONNECTED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onConnectValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onConnectValue'])
         elif event == Events.DISCONNECTED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onDisconnectValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onDisconnectValue'])
         elif event == Events.PRINT_STARTED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintStartValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintStartValue'])
         elif event == Events.PRINT_PAUSED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintPausedValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintPausedValue'])
         elif event == Events.PRINT_RESUMED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintResumedValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintResumedValue'])
         elif event == Events.PRINT_DONE or event == Events.PRINT_CANCELLED or event == Events.PRINT_FAILED:
             for pin in self.Lights:
-                self._logger.info(self.Lights[pin])
+                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintEndValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintEndValue'])
 
@@ -189,13 +189,10 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             if not self.checkLightControlEntryKeys(ctrl):
                 lightControls[idx] = self.updateLightControlEntry(ctrl)
                 modified=True
-                self._logger.info("Fixing Loop {}: '{}'".format(idx, lightControls))
             self.gpio_startup(lightControls[idx]["pin"], lightControls[idx])
 
         if modified:
             self._settings.set(["light_controls"], lightControls)
-
-        self._logger.info("LightControls settings post initialization: '{}'".format(lightControls))
 
     def on_settings_save(self, data):
         # Get old settings:
@@ -206,7 +203,6 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         # Handle changes (if new != old)
         self._logger.info("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
         for controls in self._settings.get(["light_controls"]):
-            self._logger.info("Initializing GPIO for: {}".format(controls))
             self.gpio_startup(controls["pin"], controls)
 
 
@@ -214,36 +210,13 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
     def on_after_startup(self):
         self._Lights = self._settings.get(["light_controls"])
-        self._logger.info("LightControls startup: {}".format(self._Lights))
         # start gpio
         for controls in self._settings.get(["light_controls"]):
-            self._logger.info("Initializing GPIO for: {}".format(controls))
             self.gpio_startup(controls["pin"], controls)
         # Set all default Octoprint Startup values if available:
         for pin in self.Lights:
-            self._logger.info(self.Lights[pin])
             if self.Lights[pin]['onOctoprintStartValue']:
                 self.gpio_set_value(pin, self.Lights[pin]['onOctoprintStartValue'])
-
-#   def on_after_startup(self):
-#       helpers = self._plugin_manager.get_helpers("mqtt", "mqtt_publish", "mqtt_subscribe", "mqtt_unsubscribe")
-#       if helpers:
-#           if "mqtt_subscribe" in helpers:
-#               self.mqtt_subscribe = helpers["mqtt_subscribe"]
-#               for relay in self._settings.get(["arrRelays"]):
-#                   self._tasmota_mqtt_logger.debug(self.generate_mqtt_full_topic(relay, "stat"))
-#                   self.mqtt_subscribe(self.generate_mqtt_full_topic(relay, "stat"), self._on_mqtt_subscription, kwargs=dict(top=relay["topic"],relayN=relay["relayN"]))
-#           if "mqtt_publish" in helpers:
-#               self.mqtt_publish = helpers["mqtt_publish"]
-#               self.mqtt_publish("octoprint/plugin/tasmota", "OctoPrint-TasmotaMQTT publishing.")
-#               if any(map(lambda r: r["event_on_startup"] == True, self._settings.get(["arrRelays"]))):
-#                   for relay in self._settings.get(["arrRelays"]):
-#                       self._tasmota_mqtt_logger.debug("powering on {} due to startup.".format(relay["topic"]))
-#                       self.turn_on(relay)
-#           if "mqtt_unsubscribe" in helpers:
-#               self.mqtt_unsubscribe = helpers["mqtt_unsubscribe"]
-#       else:
-#           self._plugin_manager.send_plugin_message(self._identifier, dict(noMQTT=True))
 
 
     ##~~ ShutdownPlugin mixin
@@ -251,8 +224,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def on_shutdown(self):
         for pin in list(self.Lights.keys()):
             self.gpio_cleanup(pin)
-
-        self._logger.info("LightControls shutdown")
+        self._logger.debug("LightControls shutdown")
 
 
     ##~~ AssetPlugin mixin
