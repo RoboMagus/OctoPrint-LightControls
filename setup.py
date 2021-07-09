@@ -24,7 +24,7 @@ plugin_description = """TODO"""
 plugin_author = "RoboMagus"
 
 # The plugin's author's mail address.
-plugin_author_email = "you@example.com"
+plugin_author_email = "68224306+RoboMagus@users.noreply.github.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
 plugin_url = "https://github.com/RoboMagus/OctoPrint-LightControls"
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/RoboMagus/OctoPrint-LightControls"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = []
+plugin_requires = ["RPi.GPIO>=0.6.3"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
