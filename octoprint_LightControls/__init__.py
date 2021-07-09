@@ -76,11 +76,18 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
             self.Lights[pin]["value"] = iVal
 
+    def send_light_values(self):
+        self._logger.info("SendingLightValues")
+        for pin in self.Lights:
+            self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=self.Lights[pin]["value"]))
+
     ##~~ SimpleApiPlugin mixin
 
     def get_api_commands(self):
         return dict(
             setLightValue=["pin", "percentage"],
+            getLightValues=[],
+
         )
 
     def on_api_command(self, command, data):
@@ -93,9 +100,16 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 self._logger.error("exception in setLightValue(): {}".format(exc_type))
                 self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
+        elif command == "getLightValues":
+            self.send_light_values()
 
     def on_api_get(self, request):
-        return flask.jsonify(foo="bar2")
+        self._logger.info("on_api_get({}).Json: ".format(request, request.get_json()))
+        if request == "getLightValues":
+            response = dict()
+            for pin in self.Lights:
+                response(pin=self.Lights[pin]["value"])
+            return flask.jsonify(response)
 
     def is_api_adminonly(self):
         return True

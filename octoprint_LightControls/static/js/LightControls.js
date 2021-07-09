@@ -54,6 +54,30 @@ $(function() {
             }
         }
 
+        self.requestDistributeLightValues = function() {
+            console.log("Requesting light levels!");
+            
+            //  $.get(API_BASEURL + "plugin/"+PLUGIN_ID+"/getLightLevels", JSON.stringify({"MyRequest": "GetData"})).done(function (data) {
+            //      console.log("requestLightValues::done");
+            //      console.log(data);
+            //  });
+
+            
+            $.ajax({
+                url: API_BASEURL + "plugin/"+PLUGIN_ID,
+                type: "POST",
+                dataType: "json",
+                data: JSON.stringify({
+                    command: "getLightValues",
+                }),
+                contentType: "application/json; charset=UTF-8"
+            }).done(function(data){
+
+            }).always(function(){
+
+            });
+        }
+
         self.updateLightsStructure = function() {
             self.lights([]);
             ko.utils.arrayForEach(self.settings.settings.plugins.LightControls.light_controls(), function (item, index) {
@@ -62,10 +86,12 @@ $(function() {
                     pin: item.pin,
                     light_val: ko.observable(0).withUpdater(sliderUpdate, self, item.pin()) });
             });
+            // Request values whenever the light structure is updated!
+            self.requestDistributeLightValues();
         };
 
         self.onBeforeBinding = function() {
-            self.updateLightsStructure();
+            // self.updateLightsStructure();
         };
 
         self.onAfterBinding = function() {
@@ -75,6 +101,8 @@ $(function() {
 
             lightsControl.insertAfter(containerGeneral);
             lightsControl.css('display', '');
+
+            self.updateLightsStructure();
         };
 
         self.onSettingsBeforeSave = function() {
@@ -112,7 +140,9 @@ $(function() {
 
         self.onDataUpdaterPluginMessage = function(plugin, data) {
             if (plugin == PLUGIN_ID) {
-                if (data.pin != undefined && data.value != undefined) {                    
+                if (data.pin != undefined && data.value != undefined) {        
+                    console.log("GotLightLevels!");
+                    console.log(data);
                     ko.utils.arrayForEach(self.lights(), function(item) {
                         if(item.pin() == data.pin) {
                             item.light_val(data.value);
