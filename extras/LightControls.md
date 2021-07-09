@@ -13,7 +13,7 @@ date: 2021-07-09
 
 homepage: https://github.com/RoboMagus/OctoPrint-LightControls
 source: https://github.com/RoboMagus/OctoPrint-LightControls
-archive: https://github.com/RoboMagus/OctoPrint-LightControls/archive/master.zip
+archive: https://github.com/RoboMagus/OctoPrint-LightControls/archive/main.zip
 
 
 # TODO
