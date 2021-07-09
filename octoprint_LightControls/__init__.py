@@ -15,12 +15,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.SimpleApiPlugin,
                             octoprint.plugin.StartupPlugin,
                             octoprint.plugin.ShutdownPlugin ):
-    # ToDo:
-    # - Control UI name / slider / value allignment
-    # - Automatic on / off value on printer state
-    #   - Printer online / offline
-    #   - Startup / shutdown
-    #   - Print start / stop
+
     defaultEntry = {'name': '',
                     'pin': '',
                     'ispwm': True,

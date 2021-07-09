@@ -3,43 +3,26 @@ layout: plugin
 
 id: LightControls
 title: OctoPrint-LightControls
-description: TODO
+description: Adds easily configurable PWM Light controls to Octoprint Control Tab
 authors:
 - RoboMagus
 license: AGPLv3
 
 # TODO
-date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
+date: 2021-07-09
 
 homepage: https://github.com/RoboMagus/OctoPrint-LightControls
 source: https://github.com/RoboMagus/OctoPrint-LightControls
 archive: https://github.com/RoboMagus/OctoPrint-LightControls/archive/master.zip
 
-# TODO
-# Set this to true if your plugin uses the dependency_links setup parameter to include
-# library versions not yet published on PyPi. SHOULD ONLY BE USED IF THERE IS NO OTHER OPTION!
-#follow_dependency_links: false
 
 # TODO
 tags:
-- a list
-- of tags
-- that apply
-- to your plugin
-- (take a look at the existing plugins for what makes sense here)
+- Raspberry PI
+- Lights
+- PWM
+- Slider
 
-# TODO
-screenshots:
-- url: url of a screenshot, /assets/img/...
-  alt: alt-text of a screenshot
-  caption: caption of a screenshot
-- url: url of another screenshot, /assets/img/...
-  alt: alt-text of another screenshot
-  caption: caption of another screenshot
-- ...
-
-# TODO
-featuredimage: url of a featured image for your plugin, /assets/img/...
 
 # TODO
 # You only need the following if your plugin requires specific OctoPrint versions or
@@ -59,7 +42,7 @@ compatibility:
   # OctoPrint versions being supported.
 
   octoprint:
-  - 1.2.0
+  - 1.6.0
 
   # List of compatible operating systems
   #
@@ -80,9 +63,6 @@ compatibility:
 
   os:
   - linux
-  - windows
-  - macos
-  - freebsd
 
   # Compatible Python version
   #
@@ -94,9 +74,13 @@ compatibility:
   # is EOL), leave at ">=2.7,<3" - be aware that your plugin will not be allowed to register on the
   # plugin repository if it only support Python 2.
 
-  python: ">=2.7,<3"
+  python: ">=3,<4"
 
 ---
 
-**TODO**: Longer description of your plugin, configuration examples etc. This part will be visible on the page at
-http://plugins.octoprint.org/plugin/LightControls/
+## Screenshots:
+Added Light Controls to Control panel:
+![LightControls_ControlPanel](./screenshots/LightControls_ControlPanel.png)
+
+LightControls Settings panel:
+![LightControls_Settings](./screenshots/LightControls_Settings.png)
