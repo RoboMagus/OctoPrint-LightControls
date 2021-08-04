@@ -16,6 +16,10 @@ or manually using this URL:
 
     https://github.com/RoboMagus/OctoPrint-LightControls/archive/main.zip
 
+## ⚠️ Use at your own risk
+The end user is responsible for setting up the gpio configuration used in this plugin and the corresponding wiring correctly. Failure to do so could damage your Raspberry Pi!
+I cannot be held accountable for any damages.
+
 ## Configuration
 
 Many PWM controlled Lights can be added through the plugins settings menu.
