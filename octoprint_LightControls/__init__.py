@@ -44,8 +44,12 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             GPIO.setup(pin, GPIO.OUT)
             try:
                 self.Lights[pin] = copy.deepcopy(settings)
-                self.Lights[pin]['pwm'] = GPIO.PWM(pin, int(settings["frequency"]))
-                self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
+                if settings["ispwm"]:
+                    self.Lights[pin]['pwm'] = GPIO.PWM(pin, int(settings["frequency"]))
+                    self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
+                else:
+                    GPIO.output(pin, 1 if self.Lights[pin]["inverted"] else 0) 
+
                 self.Lights[pin]['value'] = 0
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
@@ -58,18 +62,31 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def gpio_cleanup(self, pin):
         self._logger.debug("LightControls gpio_cleanup, pin: {}".format(pin))
         if pin in self.Lights:
-            self.Lights[pin]["pwm"].stop()
+            if self.Lights[pin]["ispwm"]:
+                self.Lights[pin]["pwm"].stop()
             del self.Lights[pin]
 
     def gpio_set_value(self, pin, value):
         if pin in self.Lights:
-            iVal = int(value)
-            val = ((100 - iVal) if self.Lights[pin]["inverted"] else iVal)
-            self._logger.debug("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
-            self.Lights[pin]["pwm"].ChangeDutyCycle(val)
-            if iVal != self.Lights[pin]["value"]:
-                self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
-            self.Lights[pin]["value"] = iVal
+            if self.Lights[pin]["ispwm"]:
+                iVal = int(value)
+                val = ((100 - iVal) if self.Lights[pin]["inverted"] else iVal)
+                self._logger.debug("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
+                self.Lights[pin]["pwm"].ChangeDutyCycle(val)
+                if iVal != self.Lights[pin]["value"]:
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
+                self.Lights[pin]["value"] = iVal
+            else:
+                iVal = min(int(value), 1)
+                val = ((1-iVal) if self.Lights[pin]["inverted"] else iVal)
+                # Value for non PWM pins is either 0 (off) or 100 (on), for consistency on the interfaces...
+                iVal = iVal*100
+                self._logger.debug("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
+                GPIO.output(pin, val)
+                if iVal != self.Lights[pin]["value"]:
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
+                self.Lights[pin]["value"] = iVal
+
 
     def send_light_values(self):
         self._logger.debug("SendingLightValues")
@@ -219,6 +236,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def on_shutdown(self):
         for pin in list(self.Lights.keys()):
             self.gpio_cleanup(pin)
+        GPIO.cleanup()
         self._logger.debug("LightControls shutdown")
 
 

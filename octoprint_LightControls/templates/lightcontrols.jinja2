@@ -3,15 +3,25 @@
     <h1>Lights</h1>
       <table style="margin-top: -4px;">
       <tbody data-bind="foreach: lights" style="padding: 0px;">
-          <tr  style="padding: 0px;">
-              <td  style="padding: 0px;"><div class="span2 control-box" style="margin-bottom: 0px; margin-left: 2px;">
-                  <span data-bind="text: name"></span>
-                  <input type="range" min="0" max="100" value="0" style="padding: 0; width: 98%; margin-top: -8px;" class="slider" data-bind="value: light_val, valueUpdate: 'input'">
-              </div></td>
-              <td  style="padding: 0px;"><div class="input-append control-box" style="margin-bottom: 0px; padding-left: 8px;">
-                  <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="value: light_val">
-                  <span class="add-on">%</span>
-              </div></td>
+          <tr style="padding: 0px;">
+              <td style="padding: 0px;">
+                <div class="span2 control-box" style="margin-bottom: 0px; margin-left: 2px;">
+                    <span data-bind="text: name"></span>
+                    <input type="range" min="0" max="100" value="0" style="padding: 0; width: 98%; margin-top: -8px;" class="slider" data-bind="value: light_val, valueUpdate: 'input', style: { visibility: ispwm() ? '' : 'hidden' }">
+                </div>
+              </td>
+              <td style="padding: 0px;">
+                <div class="input-append control-box" style="margin-bottom: 0px; padding-left: 8px;" data-bind="value: light_val, valueUpdate: 'input', if: ispwm">
+                    <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="value: light_val">
+                    <span class="add-on">%</span>
+                </div>
+                <div class="control-box" style="margin-bottom: 0px; padding-left: 8px;" data-bind="ifnot: ispwm">
+                    <button class="btn btn-block control-box" data-bind="click: light_toggle, css: {'btn-default': light_val() == 0}" id="toggle" title="Toggle light">
+                        <i class="fa fa-toggle-off" data-bind="css: {'fa-toggle-off': light_val() == 0, 'fa-toggle-on': light_val() > 0}"></i>
+                        <span data-bind="text: (light_val() == 0 ? 'Off' : 'On')">Off</span>
+                    </button>
+                </div>
+              </td>
           </tr>
       </tbody>
     </table>

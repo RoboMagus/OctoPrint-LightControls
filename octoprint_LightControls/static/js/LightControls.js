@@ -28,13 +28,13 @@ $(function() {
             this.subscribe(function (newValue) {
                 handler.call(target, _oldValue, newValue, identifier);
             });
-            this.extend({ rateLimit: 100 });
+            this.extend({ rateLimit: 50 });
         
             return this;     
         };
 
         var sliderUpdate = function (oldvalue, newvalue, identifier) {
-            if( oldvalue != newvalue) {            
+            if( oldvalue != newvalue) {     
                 // communicate update to backend
                 $.ajax({
                     url: API_BASEURL + "plugin/"+PLUGIN_ID,
@@ -77,7 +77,12 @@ $(function() {
                 self.lights.push({ 
                     name: item.name, 
                     pin: item.pin,
-                    light_val: ko.observable(0).withUpdater(sliderUpdate, self, item.pin()) });
+                    ispwm: item.ispwm,
+                    light_val: ko.observable(0).withUpdater(sliderUpdate, self, item.pin()),
+                    light_toggle : function() {
+                        this.light_val((this.light_val() == 0) ? 100 : 0);
+                    }
+                 });
             });
             // Request values whenever the light structure is updated!
             self.requestDistributeLightValues();

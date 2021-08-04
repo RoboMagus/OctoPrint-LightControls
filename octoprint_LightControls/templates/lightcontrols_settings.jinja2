@@ -4,7 +4,7 @@
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Name') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Pin') }}</h4></div>
-        <!-- <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>         -->
+        <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('Frequency') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Inverted') }}</h4></div>
     </div>
@@ -16,11 +16,11 @@
             <div class="span1">
                 <select style="width: 100%" data-bind="options: $parent.gpio_pin_options, value: pin"></select>
             </div>
-            <!-- <div class="span1">
+            <div class="span1">
                 <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: ispwm">
-            </div> -->
+            </div>
             <div class="span2">
-                <input type="number" min="50" max="5000" class="span12 text-right" data-bind="value: frequency">
+                <input type="number" min="50" max="5000" class="span12 text-right" data-bind="value: frequency, enable: ispwm">
             </div>
             <div class="span1">
                 <input style="padding: 4px; margin: 2px;" type="checkbox" class="span12 text-right" data-bind="checked: inverted">
@@ -37,7 +37,7 @@
     </div>
     
     <h3>{{ _('Set light value on Octoprint Startup / Printer Connect / Printer Disconnect') }}</h4>
-    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs.</span>
+    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs. For non-PWM lights any value higher than 0 will turn the light on.</span>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Octoprint Startup Value') }}</h4></div>
@@ -62,7 +62,7 @@
     </div>
 
     <h3>{{ _('Set light value on Print Events') }}</h4>
-    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs.</span>
+    <span>Valid values from 0 (off) to 100 (on). Leave empty to leave the light state un altered when the event occurs. For non-PWM lights any value higher than 0 will turn the light on.</span>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Light') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('on Start Value') }}</h4></div>
