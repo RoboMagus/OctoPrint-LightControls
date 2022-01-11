@@ -95,7 +95,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
     def gpio_startup(self, pin, settings):
         self._logger.debug("LightControls gpio_startup, pin: {}, settings: {}".format(pin, settings))
-        if pin > 0:
+        if pin and pin >= 0:
             # Remove to re-add if already present:
             if pin in self.Lights:
                 self.gpio_cleanup(pin)
@@ -116,7 +116,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
                     
         else:
-            self._logger.warning("Configured pin not an integer")
+            self._logger.warning(f"Configured pin ({pin}) not an integer")
 
     def gpio_cleanup(self, pin):
         self._logger.debug("LightControls gpio_cleanup, pin: {}".format(pin))
@@ -259,22 +259,26 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         return _entry
 
     def on_settings_initialized(self):
-        lightControls = self._settings.get(["light_controls"])
-        self._logger.info("LightControls settings initialized: '{}'".format(lightControls))
+        lightControls_in = self._settings.get(["light_controls"])
+        self._logger.info("LightControls settings initialized: '{}'".format(lightControls_in))
         
         # Ensure GPIO is initialized
         self.configure_gpio()
+
+        # Remove entries when their pin is undefined to avoid errors later on.
+        lightControls = {k: v for k,v in lightControls_in.items() if (v['pin'] or -1) >= 0}
 
         # On initialization check for incomplete settings!
         modified=False
         for idx, ctrl in enumerate(lightControls):
             if not self.checkLightControlEntryKeys(ctrl):
                 lightControls[idx] = self.updateLightControlEntry(ctrl)
-                modified=True
+                modified=True                
+                
             self.gpio_startup(lightControls[idx]["pin"], lightControls[idx])
 
         if modified:
-            self._settings.set(["light_controls"], lightControls)
+            self._settings.set(["light_controls"], lightControls_pruned)
 
     def on_settings_save(self, data):
         # Get old settings:
@@ -294,10 +298,13 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     ##~~ StartupPlugin mixin
 
     def on_after_startup(self):
-        self._Lights = self._settings.get(["light_controls"])
+        # Ensure GPIO is initialized
+        self.configure_gpio()
+
         # start gpio
         for controls in self._settings.get(["light_controls"]):
             self.gpio_startup(controls["pin"], controls)
+
         # Set all default Octoprint Startup values if available:
         for pin in self.Lights:
             if self.Lights[pin]['onOctoprintStartValue']:
