@@ -30,9 +30,68 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     'onPrintEndValue': '' }
 
     def __init__(self):
-        GPIO.setmode(GPIO.BCM)
+        self.Lights = {}        
+        # conversion tables from board pins to BCM
+        self._pin_to_gpio_rev1 = [-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
+        self._pin_to_gpio_rev2 = [-1, -1, -1, 2, -1, 3, -1, 4, 14, -1, 15, 17, 18, 27, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
+        self._pin_to_gpio_rev3 = [-1, -1, -1, 2, -1, 3, -1, 4, 14, -1, 15, 17, 18, 27, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, 5, -1, 6, 12, 13, -1, 19, 16, 26, 20, -1, 21 ]
+
+        self._gpio_to_pin_rev1 = self._create_gpio_to_pin_array(self._pin_to_gpio_rev1)
+        self._gpio_to_pin_rev2 = self._create_gpio_to_pin_array(self._pin_to_gpio_rev2)
+        self._gpio_to_pin_rev3 = self._create_gpio_to_pin_array(self._pin_to_gpio_rev3)
+
+    def _create_gpio_to_pin_array(self, array):
+        inv = [-1]*30
+        for idx, value in enumerate(array):
+            if value > -1:
+                inv[value] = idx        
+        return inv
+
+    def _gpio_board_to_bcm(self, pin):
+        if GPIO.RPI_REVISION == 1:
+            pin_to_gpio = self._pin_to_gpio_rev1
+        elif GPIO.RPI_REVISION == 2:
+            pin_to_gpio = self._pin_to_gpio_rev2
+        else:
+            pin_to_gpio = self._pin_to_gpio_rev3
+
+        return pin_to_gpio[pin]
+
+    def _gpio_bcm_to_board(self, pin):
+        if GPIO.RPI_REVISION == 1:
+            gpio_to_pin = self._gpio_to_pin_rev1
+        elif GPIO.RPI_REVISION == 2:
+            gpio_to_pin = self._gpio_to_pin_rev2
+        else:
+            gpio_to_pin = self._gpio_to_pin_rev3
+
+        return gpio_to_pin[pin]
+
+    def _gpio_get_pin(self, pin):
+        if GPIO.getmode() == GPIO.BOARD:
+            return self._gpio_bcm_to_board(pin)
+        elif GPIO.getmode() == GPIO.BCM:
+            return pin
+        else:
+            return 0
+
+    def _get_gpio_mode_string(self):
+        if GPIO.getmode() == GPIO.BOARD:
+            return "BOARD"
+        elif GPIO.getmode() == GPIO.BCM:
+            return "BCM"
+        else:
+            return "?"
+
+    def configure_gpio(self):
+        self._logger.debug("Running RPi.GPIO version %s" % GPIO.VERSION)
+        if GPIO.VERSION < "0.6":
+            self._logger.error("RPi.GPIO version 0.6.0 or greater required.")
+
         GPIO.setwarnings(False)
-        self.Lights = {}
+
+        if GPIO.getmode() is None:
+            GPIO.setmode(GPIO.BCM)
 
     def gpio_startup(self, pin, settings):
         self._logger.debug("LightControls gpio_startup, pin: {}, settings: {}".format(pin, settings))
@@ -41,14 +100,14 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             if pin in self.Lights:
                 self.gpio_cleanup(pin)
                 
-            GPIO.setup(pin, GPIO.OUT)
+            GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
             try:
                 self.Lights[pin] = copy.deepcopy(settings)
                 if settings["ispwm"]:
-                    self.Lights[pin]['pwm'] = GPIO.PWM(pin, int(settings["frequency"]))
+                    self.Lights[pin]['pwm'] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
                     self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
                 else:
-                    GPIO.output(pin, 1 if self.Lights[pin]["inverted"] else 0) 
+                    GPIO.output(self._gpio_get_pin(pin), 1 if self.Lights[pin]["inverted"] else 0) 
 
                 self.Lights[pin]['value'] = 0
             except:
@@ -62,9 +121,16 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def gpio_cleanup(self, pin):
         self._logger.debug("LightControls gpio_cleanup, pin: {}".format(pin))
         if pin in self.Lights:
-            if self.Lights[pin]["ispwm"]:
-                self.Lights[pin]["pwm"].stop()
-            del self.Lights[pin]
+            try:
+                if self.Lights[pin]["ispwm"]:
+                    self.Lights[pin]["pwm"].stop()
+                del self.Lights[pin]
+                GPIO.cleanup(self._gpio_get_pin(pin))
+            except:
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                self._logger.error("exception in gpio_cleanup(): {}".format(exc_type))
+                self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
+
 
     def gpio_set_value(self, pin, value):
         if pin in self.Lights:
@@ -82,7 +148,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 # Value for non PWM pins is either 0 (off) or 100 (on), for consistency on the interfaces...
                 iVal = iVal*100
                 self._logger.debug("LightControls pin({}).setValue({}), inverted: {}".format(pin, iVal, self.Lights[pin]["inverted"]))
-                GPIO.output(pin, val)
+                GPIO.output(self._gpio_get_pin(pin), val)
                 if iVal != self.Lights[pin]["value"]:
                     self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
                 self.Lights[pin]["value"] = iVal
@@ -195,6 +261,10 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def on_settings_initialized(self):
         lightControls = self._settings.get(["light_controls"])
         self._logger.info("LightControls settings initialized: '{}'".format(lightControls))
+        
+        # Ensure GPIO is initialized
+        self.configure_gpio()
+
         # On initialization check for incomplete settings!
         modified=False
         for idx, ctrl in enumerate(lightControls):
@@ -211,6 +281,9 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
         # Get updated settings
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+
+        # Ensure GPIO is initialized
+        self.configure_gpio()
 
         # Handle changes (if new != old)
         self._logger.info("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
@@ -247,7 +320,6 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         # core UI here.
         return {
             "js": ["js/LightControls.js"],
-            "css": ["css/LightControls.css"],
         }
 
 

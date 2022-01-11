@@ -1,9 +1,11 @@
 <!-- ko allowBindings: true -->
 <form id="settings_plugin_lightcontrols_form" class="form-horizontal">
     <h2>{{ _('Light Controls') }}</h3>
+    <span>Note: The GPIO field uses GPIO numbers, not header pin numbers!</span></br>
+    <a href="https://pinout.xyz/"><span>To convert between the two, check pinout.xyz</span></a>
     <div class="row-fluid">
         <div class="span3 text-center"><h4>{{ _('Name') }}</h4></div>
-        <div class="span1 text-center"><h4>{{ _('Pin') }}</h4></div>
+        <div class="span1 text-center"><h4>{{ _('GPIO') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('PWM') }}</h4></div>
         <div class="span2 text-center"><h4>{{ _('Frequency') }}</h4></div>
         <div class="span1 text-center"><h4>{{ _('Inverted') }}</h4></div>
