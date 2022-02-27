@@ -8,6 +8,9 @@ import sys, traceback
 import RPi.GPIO as GPIO
 import flask
 
+def clamp(n, _min, _max):
+    return max(_min, min(n, _max))
+
 class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
                             octoprint.plugin.TemplatePlugin,
@@ -30,7 +33,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     'onPrintEndValue': '' }
 
     def __init__(self):
-        self.Lights = {}        
+        self.Lights = {}
         # conversion tables from board pins to BCM
         self._pin_to_gpio_rev1 = [-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
         self._pin_to_gpio_rev2 = [-1, -1, -1, 2, -1, 3, -1, 4, 14, -1, 15, 17, 18, 27, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
@@ -44,7 +47,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         inv = [-1]*30
         for idx, value in enumerate(array):
             if value > -1:
-                inv[value] = idx        
+                inv[value] = idx
         return inv
 
     def _gpio_board_to_bcm(self, pin):
@@ -99,7 +102,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             # Remove to re-add if already present:
             if pin in self.Lights:
                 self.gpio_cleanup(pin)
-                
+
             GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
             try:
                 self.Lights[pin] = copy.deepcopy(settings)
@@ -107,14 +110,14 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     self.Lights[pin]['pwm'] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
                     self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
                 else:
-                    GPIO.output(self._gpio_get_pin(pin), 1 if self.Lights[pin]["inverted"] else 0) 
+                    GPIO.output(self._gpio_get_pin(pin), 1 if self.Lights[pin]["inverted"] else 0)
 
                 self.Lights[pin]['value'] = 0
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 self._logger.error("exception in gpio_startup(): {}".format(exc_type))
                 self._logger.error("TraceBack: {}".format(traceback.extract_tb(exc_tb)))
-                    
+
         else:
             self._logger.warning(f"Configured pin ({pin}) not an integer")
 
@@ -153,11 +156,23 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=iVal))
                 self.Lights[pin]["value"] = iVal
 
+    def gpio_get_value(self, pin):
+        if pin in self.Lights:
+            return self.Lights[pin]["value"]
+        return None
 
     def send_light_values(self):
         self._logger.debug("SendingLightValues")
         for pin in self.Lights:
             self._plugin_manager.send_plugin_message(self._identifier, dict(pin=pin, value=self.Lights[pin]["value"]))
+
+    def LightName2PinNumber(self, name):
+        pinNumber = [pin for pin, light in self.Lights.items() if light['name'] == name]
+        self._logger.debug("LightName2PinNumber() name: '{}', pin: {}".format(name, pinNumber))
+        if not pinNumber:
+            return None
+        else:
+            return pinNumber[0]
 
     ##~~ SimpleApiPlugin mixin
 
@@ -165,7 +180,6 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         return dict(
             setLightValue=["pin", "percentage"],
             getLightValues=[],
-
         )
 
     def on_api_command(self, command, data):
@@ -192,39 +206,32 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     def is_api_adminonly(self):
         return True
 
-
     ##~~ EventHandlerPlugin mixin
 
     def on_event(self, event, payload):
-        # Client connected, send current ui setting:
         if event == Events.CONNECTED:
+            # Client connected. Send current UI settings:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onConnectValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onConnectValue'])
         elif event == Events.DISCONNECTED:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onDisconnectValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onDisconnectValue'])
         elif event == Events.PRINT_STARTED:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintStartValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintStartValue'])
         elif event == Events.PRINT_PAUSED:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintPausedValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintPausedValue'])
         elif event == Events.PRINT_RESUMED:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintResumedValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintResumedValue'])
         elif event == Events.PRINT_DONE or event == Events.PRINT_CANCELLED or event == Events.PRINT_FAILED:
             for pin in self.Lights:
-                self._logger.debug(self.Lights[pin])
                 if self.Lights[pin]['onPrintEndValue']:
                     self.gpio_set_value(pin, self.Lights[pin]['onPrintEndValue'])
 
@@ -260,25 +267,27 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
 
     def on_settings_initialized(self):
         lightControls_in = self._settings.get(["light_controls"])
-        self._logger.info("LightControls settings initialized: '{}'".format(lightControls_in))
-        
+        self._logger.debug("LightControls settings initialized: '{}'".format(lightControls_in))
+
         # Ensure GPIO is initialized
         self.configure_gpio()
 
         # Remove entries when their pin is undefined to avoid errors later on.
-        lightControls = {k: v for k,v in lightControls_in.items() if (v['pin'] or -1) >= 0}
+        lightControls = [ctrl for ctrl in lightControls_in if (ctrl['pin'] or -1) >= 0]
 
         # On initialization check for incomplete settings!
         modified=False
         for idx, ctrl in enumerate(lightControls):
             if not self.checkLightControlEntryKeys(ctrl):
                 lightControls[idx] = self.updateLightControlEntry(ctrl)
-                modified=True                
-                
+                modified=True
+
             self.gpio_startup(lightControls[idx]["pin"], lightControls[idx])
 
         if modified:
-            self._settings.set(["light_controls"], lightControls_pruned)
+            self._settings.set(["light_controls"], lightControls)
+
+        self._logger.debug("LightControls pruned settings after initialize: '{}'".format(lightControls))
 
     def on_settings_save(self, data):
         # Get old settings:
@@ -289,8 +298,12 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         # Ensure GPIO is initialized
         self.configure_gpio()
 
+        # Cleanup old Gpio handles for lights that may be removed
+        for pin in list(self.Lights.keys()):
+            self.gpio_cleanup(pin)
+
         # Handle changes (if new != old)
-        self._logger.info("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
+        self._logger.debug("LightControls settings saved: '{}'".format(self._settings.get(["light_controls"])))
         for controls in self._settings.get(["light_controls"]):
             self.gpio_startup(controls["pin"], controls)
 
@@ -333,7 +346,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
     ##~~ TemplatePlugin mixin
 
     def get_template_configs(self):
-        return [ 
+        return [
             dict(type="settings", template="lightcontrols_settings.jinja2", custom_bindings=True),
             dict(type="generic", template="lightcontrols.jinja2", custom_bindings=True)
         ]
@@ -362,12 +375,59 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         }
 
 
+    ##~~ Helper functions
+
+    def ext_get_light_names(self):
+        """
+        Get light names
+        :return: array of light names
+        """
+        val = [light['name'] for (pin, light) in self.Lights.items()]
+        self._logger.info("EXT. get_light_names(): {}".format(val))
+        return val
+
+    def ext_get_light_value(self, light_name=None):
+        """
+        Get light value from provided light name
+        :param light_name: Name of the light
+        :return: value from 0 to 100
+        """
+        pinNumber = self.LightName2PinNumber(light_name)
+        val = self.gpio_get_value(pinNumber)
+        self._logger.info("EXT. get_light_value(light_name: '{}'): {}".format(light_name, val))
+        return val
+
+    def ext_set_light_value(self, light_name=None, light_value=0):
+        """
+        Sets light value for provided light name
+        :param light_name: Name of the light
+        :param light_value: value for the light (0 to 100)
+        :return: set value if successful, None otherwise.
+        """
+        self._logger.info(f"EXT. set_light_value(light_name: '{light_name}', light_value: {light_value})")
+        if light_name and light_value != None:
+            pinNumber = self.LightName2PinNumber(light_name)
+            self.gpio_set_value(pinNumber, clamp(light_value, 0, 100))
+            return self.gpio_get_value(pinNumber)
+
+        return None
+
+
 __plugin_name__ = "LightControls"
 __plugin_pythoncompat__ = ">=3,<4" # only python 3
 
 def __plugin_load__():
+    plugin = LightcontrolsPlugin()
+
+    global __plugin_helpers__
+    __plugin_helpers__ = dict(
+        get_light_names=plugin.ext_get_light_names,
+        get_light_value=plugin.ext_get_light_value,
+        set_light_value=plugin.ext_set_light_value
+    )
+
     global __plugin_implementation__
-    __plugin_implementation__ = LightcontrolsPlugin()
+    __plugin_implementation__ = plugin
 
     global __plugin_hooks__
     __plugin_hooks__ = {
