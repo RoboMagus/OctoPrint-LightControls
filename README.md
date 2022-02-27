@@ -54,3 +54,8 @@ if helpers:
                 self._logger.info(f"Light '{name}' value: {value}")
 
 ```
+
+
+## Future additions / improvements
+- [ ] Add support for hardware PWM (Should improve #2)
+- [ ] ...
