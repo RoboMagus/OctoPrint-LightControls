@@ -18,8 +18,8 @@ $(function() {
         self.lights = ko.observableArray(); // light states
 
         ko.subscribable.fn.withUpdater = function (handler, target, identifier) {
-            var self = this;   
-        
+            var self = this;
+
             var _oldValue;
             this.subscribe(function (oldValue) {
                 _oldValue = oldValue;
@@ -30,11 +30,11 @@ $(function() {
             });
             this.extend({ rateLimit: 50 });
         
-            return this;     
+            return this;
         };
 
         var sliderUpdate = function (oldvalue, newvalue, identifier) {
-            if( oldvalue != newvalue) {     
+            if( oldvalue != newvalue) {
                 // communicate update to backend
                 $.ajax({
                     url: API_BASEURL + "plugin/"+PLUGIN_ID,
