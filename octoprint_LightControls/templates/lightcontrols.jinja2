@@ -11,8 +11,8 @@
                 </div>
               </td>
               <td style="padding: 0px;">
-                <div class="input-append control-box" style="margin-bottom: 0px; padding-left: 8px;" data-bind="value: light_val, valueUpdate: 'input', if: ispwm">
-                    <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="value: light_val">
+                <div class="input-append control-box" style="margin-bottom: 0px; padding-left: 8px;" data-bind="if: ispwm">
+                    <input type="number" class="input-mini" min="0" max="100" step="5" data-bind="textInput: light_val">
                     <span class="add-on">%</span>
                 </div>
                 <div class="control-box" style="margin-bottom: 0px; padding-left: 8px;" data-bind="ifnot: ispwm">
