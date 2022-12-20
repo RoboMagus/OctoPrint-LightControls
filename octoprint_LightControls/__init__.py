@@ -369,6 +369,24 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                 "repo": "OctoPrint-LightControls",
                 "current": self._plugin_version,
 
+                "stable_branch": {
+                    "name": "Stable",
+                    "branch": "main",
+                    "comittish": ["main"],
+                },
+                "prerelease_branches": [
+                    {
+                        "name": "Release Candidate",
+                        "branch": "RC",
+                        "comittish": ["RC", "main"],
+                    },
+                    {
+                        "name": "Development",
+                        "branch": "dev",
+                        "comittish": ["dev", "RC", "main"],
+                    }
+                ],
+
                 # update method: pip
                 "pip": "https://github.com/RoboMagus/OctoPrint-LightControls/archive/{target_version}.zip",
             }
