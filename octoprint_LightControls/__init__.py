@@ -4,12 +4,19 @@ from __future__ import absolute_import
 import copy
 import octoprint.plugin
 from octoprint.events import eventManager, Events
+from rpi_hardware_pwm import HardwarePWM
 import sys, traceback
 import RPi.GPIO as GPIO
 import flask
 
 def clamp(n, _min, _max):
     return max(_min, min(n, _max))
+
+# Wrap 'HardwarePWM' added function ChangeDutyCycle to internal 'change_duty_cycle'
+def ChangeDutyCycleWrapper(self, val):
+    self.change_duty_cycle(val)
+
+HardwarePWM.ChangeDutyCycle = ChangeDutyCycleWrapper
 
 class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
@@ -78,6 +85,17 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
         else:
             return 0
 
+    def _get_hw_pwm_channel(self, pin):
+        if pin in [12, 18]:
+            return 0
+        elif pin in [13, 19]:
+            return 1
+        else:
+            return None
+    
+    def _is_hw_pwm_pin(self, pin):
+        return pin in [12, 13, 18, 19]
+
     def _get_gpio_mode_string(self):
         if GPIO.getmode() == GPIO.BOARD:
             return "BOARD"
@@ -107,12 +125,21 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             try:
                 self.Lights[pin] = copy.deepcopy(settings)
                 if settings["ispwm"]:
-                    self.Lights[pin]['pwm'] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
-                    self.Lights[pin]['pwm'].start(100 if self.Lights[pin]["inverted"] else 0)
+                    if self._is_hw_pwm_pin(self._gpio_get_pin(pin)):
+                        try:
+                            self.Lights[pin]["pwm"] = HardwarePWM(self._get_hw_pwm_channel(self._gpio_get_pin(pin)), int(settings["frequency"]))
+                        except Exception as e:
+                            self._logger.error("Tried to setup pin {} as Hardware PWM on channel {}, but failed:".format(pin, self._get_hw_pwm_channel(self._gpio_get_pin(pin))))
+                            self._logger.error(e)
+                            self._logger.warning("Setting up as Soft PWM instead...")
+                            self.Lights[pin]["pwm"] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
+                    else:
+                        self.Lights[pin]["pwm"] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
+                    self.Lights[pin]["pwm"].start(100 if self.Lights[pin]["inverted"] else 0)
                 else:
                     GPIO.output(self._gpio_get_pin(pin), 1 if self.Lights[pin]["inverted"] else 0)
 
-                self.Lights[pin]['value'] = 0
+                self.Lights[pin]["value"] = 0
             except:
                 exc_type, exc_value, exc_tb = sys.exc_info()
                 self._logger.error("exception in gpio_startup(): {}".format(exc_type))
