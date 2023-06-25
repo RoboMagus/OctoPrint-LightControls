@@ -128,6 +128,7 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
                     if self._is_hw_pwm_pin(self._gpio_get_pin(pin)):
                         try:
                             self.Lights[pin]["pwm"] = HardwarePWM(self._get_hw_pwm_channel(self._gpio_get_pin(pin)), int(settings["frequency"]))
+                            self._logger.debug("Setup HW PWM succeded!")
                         except Exception as e:
                             self._logger.error("Tried to setup pin {} as Hardware PWM on channel {}, but failed:".format(pin, self._get_hw_pwm_channel(self._gpio_get_pin(pin))))
                             self._logger.error(e)
