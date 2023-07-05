@@ -121,23 +121,26 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             if pin in self.Lights:
                 self.gpio_cleanup(pin)
 
-            GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
             try:
                 self.Lights[pin] = copy.deepcopy(settings)
                 if settings["ispwm"]:
                     if self._is_hw_pwm_pin(self._gpio_get_pin(pin)):
                         try:
                             self.Lights[pin]["pwm"] = HardwarePWM(self._get_hw_pwm_channel(self._gpio_get_pin(pin)), int(settings["frequency"]))
-                            self._logger.debug("Setup HW PWM succeded!")
+                            self._logger.debug("Setup hardware PWM succeded!")
                         except Exception as e:
-                            self._logger.error("Tried to setup pin {} as Hardware PWM on channel {}, but failed:".format(pin, self._get_hw_pwm_channel(self._gpio_get_pin(pin))))
+                            self._logger.error("Tried to setup pin {} as hardware PWM on channel {}, but failed:".format(pin, self._get_hw_pwm_channel(self._gpio_get_pin(pin))))
                             self._logger.error(e)
-                            self._logger.warning("Setting up as Soft PWM instead...")
+                            self._logger.warning("Setting up as software PWM instead...")
+                            self._logger.warning("If your LEDs appear to be flickering, look into hardware PWM.")
+                            GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
                             self.Lights[pin]["pwm"] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
                     else:
+                        GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
                         self.Lights[pin]["pwm"] = GPIO.PWM(self._gpio_get_pin(pin), int(settings["frequency"]))
                     self.Lights[pin]["pwm"].start(100 if self.Lights[pin]["inverted"] else 0)
                 else:
+                    GPIO.setup(self._gpio_get_pin(pin), GPIO.OUT)
                     GPIO.output(self._gpio_get_pin(pin), 1 if self.Lights[pin]["inverted"] else 0)
 
                 self.Lights[pin]["value"] = 0
