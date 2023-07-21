@@ -26,6 +26,22 @@ Many PWM controlled Lights can be added through the plugins settings menu.
 In the top section you can add the light and give it a name, select the pin to use, etc.
 Enabling and Disabling the lights automatically on e.g. print start / stop can be configured in the section below. Here you can enter the light value as a percentage of full brightness. Empty fields imply the light will remain untouched when the event occurs.
 
+### Hardware PWM
+In versions >= `0.4.3` support for Hardware PWM is added to mittigate the flickering effects that users may experience caused by the software PWM used by default (See issue [#6](https://github.com/RoboMagus/OctoPrint-LightControls/issues/6)).
+
+The use of Hardware PWM needs additional configuration to the Raspberry pi config. The applicable PWM overlays need to be added to the `/boot/config.txt` file. Details and options are best described [here](https://github.com/dotnet/iot/blob/main/Documentation/raspi-pwm.md#enabling-hardware-pwm).
+
+Note that Hardware PWM on the Pi is limited to pins 12, 13, 18 and 19! For each of these pins, the following overlays should be added to `/boot/config.txt`:
+
+| GPIO      | dtoverlay                    |
+| --------- | ---------------------------- |
+| GPIO 12   | dtoverlay=pwm,pin=12,func=4  |
+| GPIO 18   | dtoverlay=pwm,pin=18,func=2  |
+| GPIO 13   | dtoverlay=pwm,pin=13,func=4  |
+| GPIO 19   | dtoverlay=pwm,pin=19,func=2  |
+
+Once these changes are applied and the Pi is rebooted(**!**), this plugin will automatically attempt to use Hardware PWM on any of these pins when they are configured to act as PWM lights.
+
 ## Helpers
 
 As per version `0.3.0` this plugin supports a few helper functions that can be used by other plugin developers to interact with LightControls.
