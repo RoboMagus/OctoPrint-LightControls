@@ -73,5 +73,5 @@ if helpers:
 
 
 ## Future additions / improvements
-- [ ] Add support for hardware PWM (Should improve #2)
+- [x] Add support for hardware PWM (Should improve #2)
 - [ ] ...
