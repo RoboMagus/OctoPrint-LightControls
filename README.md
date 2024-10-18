@@ -71,7 +71,31 @@ if helpers:
 
 ```
 
+## @ Commands
+
+Since version `0.5.0` this plugin supports changing light values using [`@-commands`](https://docs.octoprint.org/en/master/features/atcommands.html). This enables control of the lights through GCode and may be useful in combination with [Octolapse](https://github.com/FormerLurker/Octolapse?tab=readme-ov-file#improved-camera-scripts-and-tests) to change the light brightness using the before / after snapshot gcode.
+
+The format for these commands is `@LIGHTCONTROL [name] [value]`, where `[name]` is the name assigned to the light you wish to change, and `[value]` is the brightness percentage to set (range 0 to 100).
+
+For example to take Octolapse snapshots in a well lit chamber, without the glare of lights near the nozzle, one could use the following GCode snippets:
+
+__Before Snapshot GCode__
+```
+@LIGHTCONTROL Chamber 100
+@LIGHTCONTROL NozzleCam 0
+G4 S2
+```
+
+__After Snapshot GCode__
+```
+@LIGHTCONTROL Chamber 20
+@LIGHTCONTROL NozzleCam 100
+```
+
+Note the [`G4` Dwell](https://marlinfw.org/docs/gcode/G004.html) command after changing the light values to allow the light values to settle and the camera to adjust its settings.
+
 
 ## Future additions / improvements
-- [x] Add support for hardware PWM (Should improve #2)
+- [x] Add support for hardware PWM (Should improve [#2](https://github.com/RoboMagus/OctoPrint-LightControls/issues/2))
+- [x] Implement [`@-commands`](https://docs.octoprint.org/en/master/features/atcommands.html) (Issue [#9](https://github.com/RoboMagus/OctoPrint-LightControls/issues/9))
 - [ ] ...
