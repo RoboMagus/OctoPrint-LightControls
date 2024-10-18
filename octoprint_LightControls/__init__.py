@@ -423,7 +423,25 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             }
         }
 
+    
+    ##~~ Atcommand hook
 
+    def atcommand_handler(self, _comm, _phase, command, parameters, tags=None, *args, **kwargs):
+        if command != "LIGHTCONTROL":
+            return
+
+        [light, value, *_] = parameters.split() + ["", ""]
+        self._logger.debug(f"@Command. Light: '{light}', Value: {value}")
+        
+        if light and value:
+            pinNumber = self.LightName2PinNumber(light)
+            self.gpio_set_value(pinNumber, clamp(int(value), 0, 100))
+        else:
+            self._logger.warning("@Command incomplete! Needs format '@LIGHTCONTROL [LightName] [LightValue]'")
+
+        return None # No further actions required
+
+        
     ##~~ Helper functions
 
     def ext_get_light_names(self):
@@ -480,5 +498,6 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.atcommand.sending": __plugin_implementation__.atcommand_handler
     }
