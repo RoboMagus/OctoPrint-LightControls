@@ -227,12 +227,10 @@ class LightcontrolsPlugin(  octoprint.plugin.SettingsPlugin,
             self.send_light_values()
 
     def on_api_get(self, request):
-        self._logger.debug("on_api_get({}).Json: ".format(request, request.get_json()))
-        if request == "getLightValues":
-            response = dict()
-            for pin in self.Lights:
-                response(pin=self.Lights[pin]["value"])
-            return flask.jsonify(response)
+        response = dict()
+        for pin in self.Lights:
+            response[pin] = self.Lights[pin]["value"]
+        return flask.jsonify(response)
 
     def is_api_adminonly(self):
         return True
