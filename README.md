@@ -1,3 +1,7 @@
+
+> [!WARNING]  
+> This plugin is no longer maintained!
+
 # OctoPrint-LightControls
 
 This plugin allows the user to easilly configure and control a PWM light for Raspberry PI GPIOs. 
